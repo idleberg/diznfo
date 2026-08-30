@@ -1,0 +1,48 @@
+[tools]
+xcodegen = "latest"
+swiftlint = "latest"
+hk = "latest"
+pkl = "latest"
+
+[env]
+HK_MISE = 1
+
+[hooks]
+postinstall = "hk install --mise"
+
+[tasks.generate]
+description = "Regenerate Quicklook.xcodeproj from project.yml"
+run = "xcodegen generate"
+# Deliberately uncached: xcodegen globs the source folders, so adding a file
+# there changes the project even though project.yml itself has not. A cache
+# keyed on project.yml silently leaves new files out of the build.
+
+[tasks.test]
+description = "Run the NFOKit unit tests"
+run = "swift test"
+
+[tasks.lint]
+description = "Lint Swift sources"
+run = "swiftlint lint --quiet"
+
+[tasks.format]
+description = "Format Swift sources in place"
+run = "swift format --recursive --in-place App Extension Sources Tests Package.swift"
+
+[tasks.'format:check']
+description = "Fail if any Swift source is unformatted"
+run = "swift format lint --strict --recursive App Extension Sources Tests Package.swift"
+
+[tasks.build]
+description = "Build the app and QuickLook extension into ./build"
+depends = ["generate"]
+run = "xcodebuild -project Quicklook.xcodeproj -scheme Quicklook -configuration Debug CONFIGURATION_BUILD_DIR=$PWD/build build"
+
+[tasks.install]
+description = "Build, then register the app with QuickLook (see README)"
+depends = ["build"]
+run = "./scripts/register.sh"
+
+[tasks.uninstall]
+description = "Unregister the app from QuickLook"
+run = "./scripts/register.sh --remove"

@@ -1,0 +1,37 @@
+amends "package://github.com/jdx/hk/releases/download/v1.56.1/hk@1.56.1#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v1.56.1/hk@1.56.1#/Builtins.pkl"
+
+local swiftGlob = List("App/**/*.swift", "Extension/**/*.swift", "Sources/**/*.swift", "Tests/**/*.swift", "Package.swift")
+
+local linters = new Mapping<String, Step> {
+    ["swiftlint"] = (Builtins.swiftlint) {
+        glob = swiftGlob
+    }
+    // swift-format ships with the Xcode toolchain — no extra tool to install.
+    ["swift-format"] {
+        glob = swiftGlob
+        check = "swift format lint --strict {{ files }}"
+        fix = "swift format --in-place {{ files }}"
+    }
+    // Whole-package, so it does not take {{ files }}.
+    ["tests"] {
+        glob = swiftGlob
+        check = "swift test"
+        exclusive = true
+    }
+}
+
+hooks {
+    ["pre-commit"] {
+        fix = true
+        stash = "git"
+        steps = linters
+    }
+    ["fix"] {
+        fix = true
+        steps = linters
+    }
+    ["check"] {
+        steps = linters
+    }
+}

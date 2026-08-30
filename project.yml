@@ -1,0 +1,94 @@
+name: Quicklook
+options:
+  bundleIdPrefix: org.quicklook
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # Ad-hoc signing so a local build registers with QuickLook without an
+    # Apple Developer team.
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGNING_REQUIRED: YES
+    CODE_SIGNING_ALLOWED: YES
+configFiles:
+  Debug: Local.xcconfig
+  Release: Local.xcconfig
+
+packages:
+  NFOKit:
+    path: .
+
+targets:
+  Quicklook:
+    type: application
+    platform: macOS
+    sources: [App]
+    settings:
+      # The target keeps its identifier-safe name (it is the scheme name the
+      # build task uses); only the shipped bundle is renamed.
+      PRODUCT_NAME: Quicklook NFO
+      PRODUCT_BUNDLE_IDENTIFIER: org.quicklook.Quicklook
+    dependencies:
+      - package: NFOKit
+      - target: QuicklookExtension
+        embed: true
+        codeSign: true
+    # Deliberately not sandboxed: the app has to write into the extension's
+    # container to hand it the user's settings. See DEVELOP "Sharing settings".
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleName: Quicklook NFO
+        LSMinimumSystemVersion: "14.0"
+        LSApplicationCategoryType: public.app-category.utilities
+        NSHumanReadableCopyright: ""
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: org.quicklook.nfo
+            UTTypeDescription: NFO Document
+            UTTypeConformsTo: [public.plain-text]
+            UTTypeTagSpecification:
+              public.filename-extension: [nfo]
+          - UTTypeIdentifier: org.quicklook.diz
+            UTTypeDescription: Description in Zip
+            UTTypeConformsTo: [public.plain-text]
+            UTTypeTagSpecification:
+              public.filename-extension: [diz]
+
+  QuicklookExtension:
+    type: app-extension
+    platform: macOS
+    sources: [Extension]
+    settings:
+      # macOS rejects an app extension whose bundle id is not prefixed by its
+      # containing app's — it silently never registers with QuickLook.
+      PRODUCT_BUNDLE_IDENTIFIER: org.quicklook.Quicklook.QuicklookExtension
+    dependencies:
+      - package: NFOKit
+      - sdk: QuickLookUI.framework
+      - sdk: WebKit.framework
+    entitlements:
+      path: Extension/QuicklookExtension.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.files.user-selected.read-only: true
+        # WKWebView's content process refuses to launch in a sandbox without
+        # this, even for a page that loads nothing off the network. JavaScript
+        # is disabled and the HTML is fully inlined, so nothing is fetched.
+        com.apple.security.network.client: true
+    info:
+      path: Extension/Info.plist
+      properties:
+        CFBundleDisplayName: Quicklook Preview
+        CFBundlePackageType: XPC!
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.quicklook.preview
+          NSExtensionPrincipalClass: PreviewViewController
+          NSExtensionAttributes:
+            QLSupportedContentTypes: [org.quicklook.nfo, org.quicklook.diz]
+            QLSupportsSearchableItems: false
