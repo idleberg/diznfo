@@ -26,8 +26,8 @@
 		<dict>
 			<key>QLSupportedContentTypes</key>
 			<array>
-				<string>org.quicklook.nfo</string>
-				<string>org.quicklook.diz</string>
+				<string>com.idleberg.QuicklookNFO.nfo</string>
+				<string>com.idleberg.QuicklookNFO.diz</string>
 			</array>
 			<key>QLSupportsSearchableItems</key>
 			<false/>

@@ -35,4 +35,4 @@ qlmanage -r cache >/dev/null 2>&1 || true
 open -g "$installed"
 
 echo "Installed $installed"
-echo "Verify with: pluginkit -mAv | grep org.quicklook"
+echo "Verify with: pluginkit -mAv | grep com.idleberg"

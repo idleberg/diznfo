@@ -1,6 +1,6 @@
 name: Quicklook
 options:
-  bundleIdPrefix: org.quicklook
+  bundleIdPrefix: com.idleberg
   deploymentTarget:
     macOS: "14.0"
   createIntermediateGroups: true
@@ -33,7 +33,7 @@ targets:
       # The target keeps its identifier-safe name (it is the scheme name the
       # build task uses); only the shipped bundle is renamed.
       PRODUCT_NAME: Quicklook NFO
-      PRODUCT_BUNDLE_IDENTIFIER: org.quicklook.Quicklook
+      PRODUCT_BUNDLE_IDENTIFIER: com.idleberg.QuicklookNFO
     dependencies:
       - package: NFOKit
       - target: QuicklookExtension
@@ -49,12 +49,12 @@ targets:
         LSApplicationCategoryType: public.app-category.utilities
         NSHumanReadableCopyright: ""
         UTExportedTypeDeclarations:
-          - UTTypeIdentifier: org.quicklook.nfo
+          - UTTypeIdentifier: com.idleberg.QuicklookNFO.nfo
             UTTypeDescription: NFO Document
             UTTypeConformsTo: [public.plain-text]
             UTTypeTagSpecification:
               public.filename-extension: [nfo]
-          - UTTypeIdentifier: org.quicklook.diz
+          - UTTypeIdentifier: com.idleberg.QuicklookNFO.diz
             UTTypeDescription: Description in Zip
             UTTypeConformsTo: [public.plain-text]
             UTTypeTagSpecification:
@@ -67,7 +67,7 @@ targets:
     settings:
       # macOS rejects an app extension whose bundle id is not prefixed by its
       # containing app's — it silently never registers with QuickLook.
-      PRODUCT_BUNDLE_IDENTIFIER: org.quicklook.Quicklook.QuicklookExtension
+      PRODUCT_BUNDLE_IDENTIFIER: com.idleberg.QuicklookNFO.QuicklookExtension
     dependencies:
       - package: NFOKit
       - sdk: QuickLookUI.framework
@@ -90,5 +90,5 @@ targets:
           NSExtensionPointIdentifier: com.apple.quicklook.preview
           NSExtensionPrincipalClass: PreviewViewController
           NSExtensionAttributes:
-            QLSupportedContentTypes: [org.quicklook.nfo, org.quicklook.diz]
+            QLSupportedContentTypes: [com.idleberg.QuicklookNFO.nfo, com.idleberg.QuicklookNFO.diz]
             QLSupportsSearchableItems: false

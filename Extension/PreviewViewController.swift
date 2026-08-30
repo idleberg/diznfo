@@ -93,7 +93,7 @@ private final class LoadWaiter: NSObject, WKNavigationDelegate {
     finish(
       .failure(
         NSError(
-          domain: "org.quicklook", code: 1,
+          domain: "com.idleberg.QuicklookNFO", code: 1,
           userInfo: [NSLocalizedDescriptionKey: "The web content process terminated."])))
   }
 }

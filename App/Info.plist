@@ -34,7 +34,7 @@
 			<key>UTTypeDescription</key>
 			<string>NFO Document</string>
 			<key>UTTypeIdentifier</key>
-			<string>org.quicklook.nfo</string>
+			<string>com.idleberg.QuicklookNFO.nfo</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>
@@ -51,7 +51,7 @@
 			<key>UTTypeDescription</key>
 			<string>Description in Zip</string>
 			<key>UTTypeIdentifier</key>
-			<string>org.quicklook.diz</string>
+			<string>com.idleberg.QuicklookNFO.diz</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>
