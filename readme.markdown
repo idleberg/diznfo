@@ -2,6 +2,8 @@
 
 > A modern, configurable Quicklook plugin for NFO/DIZ files
 
+**Features**
+
 - Faithful CP437 decoding, so box-drawing and block art render as intended
 - Four bundled DOS text-mode bitmap fonts, or any fixed-pitch system font
 - Integer zoom (1×, 2×, 3×) that keeps pixel glyphs crisp
