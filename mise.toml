@@ -38,11 +38,11 @@ description = "Build the app and QuickLook extension into ./build"
 depends = ["generate"]
 run = "xcodebuild -project Quicklook.xcodeproj -scheme Quicklook -configuration Debug CONFIGURATION_BUILD_DIR=$PWD/build build"
 
-[tasks.install]
+[tasks.register]
 description = "Build, then register the app with QuickLook (see README)"
 depends = ["build"]
 run = "./scripts/register.sh"
 
-[tasks.uninstall]
+[tasks.unregister]
 description = "Unregister the app from QuickLook"
 run = "./scripts/register.sh --remove"
