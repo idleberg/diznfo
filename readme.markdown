@@ -10,6 +10,8 @@
 - Light and dark color pairs, following the system appearance or pinned
 - SAUCE metadata parsing
 
+![Screenshot](https://github.com/idleberg/quicklook-nfo/blob/main/.github/resources/quicklook.png)
+
 ## Settings
 
 Open `/Applications/Quicklook NFO.app` — it is a single "Quicklook NFO Settings"
