@@ -69,7 +69,7 @@ public struct PreviewSettings: Codable, Equatable, Sendable {
     self.darkBackground = darkBackground
   }
 
-  public static let extensionBundleID = "com.idleberg.QuicklookNFO.QuicklookExtension"
+  public static let extensionBundleID = "com.idleberg.QuicklookNFO.QuicklookNFOExtension"
 
   /// Both sides agree on one file inside the *extension's* sandbox container.
   ///

@@ -1,4 +1,4 @@
-name: Quicklook
+name: quicklook-nfo
 options:
   bundleIdPrefix: com.idleberg
   deploymentTarget:
@@ -25,7 +25,7 @@ packages:
     path: .
 
 targets:
-  Quicklook:
+  QuicklookNFO:
     type: application
     platform: macOS
     sources: [App]
@@ -36,7 +36,7 @@ targets:
       PRODUCT_BUNDLE_IDENTIFIER: com.idleberg.QuicklookNFO
     dependencies:
       - package: NFOKit
-      - target: QuicklookExtension
+      - target: QuicklookNFOExtension
         embed: true
         codeSign: true
     # Deliberately not sandboxed: the app has to write into the extension's
@@ -60,20 +60,20 @@ targets:
             UTTypeTagSpecification:
               public.filename-extension: [diz]
 
-  QuicklookExtension:
+  QuicklookNFOExtension:
     type: app-extension
     platform: macOS
     sources: [Extension]
     settings:
       # macOS rejects an app extension whose bundle id is not prefixed by its
       # containing app's — it silently never registers with QuickLook.
-      PRODUCT_BUNDLE_IDENTIFIER: com.idleberg.QuicklookNFO.QuicklookExtension
+      PRODUCT_BUNDLE_IDENTIFIER: com.idleberg.QuicklookNFO.QuicklookNFOExtension
     dependencies:
       - package: NFOKit
       - sdk: QuickLookUI.framework
       - sdk: WebKit.framework
     entitlements:
-      path: Extension/QuicklookExtension.entitlements
+      path: Extension/QuicklookNFOExtension.entitlements
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.files.user-selected.read-only: true
@@ -84,7 +84,7 @@ targets:
     info:
       path: Extension/Info.plist
       properties:
-        CFBundleDisplayName: Quicklook Preview
+        CFBundleDisplayName: Quicklook NFO Preview
         CFBundlePackageType: XPC!
         NSExtension:
           NSExtensionPointIdentifier: com.apple.quicklook.preview

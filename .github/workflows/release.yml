@@ -34,8 +34,8 @@ jobs:
       - name: Build Release (${{ matrix.arch }})
         run: |
           xcodebuild \
-            -project Quicklook.xcodeproj \
-            -scheme Quicklook \
+            -project quicklook-nfo.xcodeproj \
+            -scheme QuicklookNFO \
             -configuration Release \
             -derivedDataPath build \
             -arch ${{ matrix.arch }} \
@@ -50,7 +50,7 @@ jobs:
         run: |
           cd "build/Build/Products/Release"
           zip -r -9 quicklook-nfo.zip "Quicklook NFO.app"
-          mv quicklook-nfo.zip "$GITHUB_WORKSPACE/Quicklook-NFO-v${{ steps.version.outputs.version }}-${{ matrix.arch }}.zip"
+          mv quicklook-nfo.zip "$GITHUB_WORKSPACE/quicklook-nfo-v${{ steps.version.outputs.version }}-${{ matrix.arch }}.zip"
 
       - name: Generate checksums
         run: sha256sum quicklook-nfo-v${{ steps.version.outputs.version }}-${{ matrix.arch }}.zip > SHA256SUMS

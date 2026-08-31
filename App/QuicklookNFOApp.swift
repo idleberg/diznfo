@@ -3,7 +3,7 @@ import NFOKit
 import SwiftUI
 
 @main
-struct QuicklookApp: App {
+struct QuicklookNFOApp: App {
   var body: some Scene {
     // "Settings" is the HIG term since Ventura; "Preferences" is retired.
     Window("Quicklook NFO Settings", id: "settings") {

@@ -2,7 +2,7 @@
 .DS_Store
 DerivedData/
 Local.xcconfig
-Quicklook.xcodeproj/
+quicklook-nfo.xcodeproj/
 build/
 *.nfo
 *.diz
