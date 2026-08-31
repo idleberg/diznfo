@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    name: Lint, format & test
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: jdx/mise-action@v2
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Lint
+        run: mise run lint
+
+      - name: Check formatting
+        run: mise run format:check
+
+      - name: Test
+        run: mise run test
