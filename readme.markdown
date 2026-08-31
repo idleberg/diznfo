@@ -2,12 +2,12 @@
 
 > A modern, configurable Quicklook plugin for NFO/DIZ files
 
-![Screenshot](https://raw.githubusercontent.com/idleberg/vscode-nsis/main/.github/resources/settings.png)
-
 ## Settings
 
 Open `/Applications/Quicklook NFO.app` — it is a single "Quicklook NFO Settings"
 window, and every edit saves immediately; there is no OK/Apply.
+
+![Screenshot](https://github.com/idleberg/quicklook-nfo/blob/main/.github/resources/settings.png)
 
 - **Font** — four bundled DOS text-mode fonts, then any fixed-pitch family
   installed on the system. Only the bundled ones are guaranteed to line up;
@@ -26,6 +26,4 @@ window, and every edit saves immediately; there is no OK/Apply.
 
 ## License
 
-This work is licensed under the [Apache License, Version 2.0](LICENSE-APACHE) or [The MIT License](LICENSE-MIT).
-
-The bundled, unmodified fonts are taken from [The Ultimate Oldschool PC Font Pack](https://int10h.org/oldschool-pc-fonts/) and are licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+This work is licensed under the [Apache License, Version 2.0](LICENSE-APACHE) or [The MIT License](LICENSE-MIT). The included, unmodified fonts are taken from [The Ultimate Oldschool PC Font Pack](https://int10h.org/oldschool-pc-fonts/) and are licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
