@@ -12,6 +12,12 @@
 
 ![Screenshot](https://github.com/idleberg/quicklook-nfo/blob/main/.github/resources/quicklook.png)
 
+## Installation
+
+```sh
+brew install idleberg/asahi/quicklook-nfo
+```
+
 ## Settings
 
 Open `/Applications/Quicklook NFO.app` — it is a single "Quicklook NFO Settings"
