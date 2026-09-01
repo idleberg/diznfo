@@ -89,29 +89,6 @@ struct PreferencesView: View {
           Button("Reset") { settings = PreviewSettings() }
             .disabled(settings == PreviewSettings())
         }
-      } footer: {
-        // A real `Link` rather than a markdown link inside `Text`: only a view
-        // of its own can carry the hover cursor (and its own focus ring). The
-        // price is that the pieces wrap separately, so the line is kept short
-        // enough to fit the window's fixed 420pt width on one line.
-        // Non-breaking spaces: SwiftUI trims leading/trailing whitespace off
-        // each `Text`, so a plain space next to the link renders as nothing.
-        HStack(spacing: 0) {
-          Text("Fonts taken from\u{00A0}")
-          Link(
-            "Oldschool PC Fonts",
-            destination: URL(string: "https://int10h.org/oldschool-pc-fonts/")!
-          )
-          // The container's `.secondary` would otherwise grey the link out.
-          .foregroundStyle(Color(nsColor: .linkColor))
-          .onHover { $0 ? NSCursor.pointingHand.push() : NSCursor.pop() }
-          Text("\u{00A0}by VileR, licensed under CC-BY-SA.")
-        }
-        .lineLimit(1)
-        .fixedSize()
-        // Attribution stays de-emphasised — the one place grey is right.
-        .font(.subheadline)
-        .foregroundStyle(.secondary)
       }
     }
     .formStyle(.grouped)
