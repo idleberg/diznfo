@@ -11,7 +11,7 @@ HK_MISE = 1
 postinstall = "hk install --mise"
 
 [tasks.generate]
-description = "Regenerate quicklook-nfo.xcodeproj from project.yml"
+description = "Regenerate diznfo.xcodeproj from project.yml"
 run = "xcodegen generate"
 # Deliberately uncached: xcodegen globs the source folders, so adding a file
 # there changes the project even though project.yml itself has not. A cache
@@ -36,7 +36,7 @@ run = "swift format lint --strict --recursive App Extension Sources Tests Packag
 [tasks.build]
 description = "Build the app and QuickLook extension into ./build"
 depends = ["generate"]
-run = "xcodebuild -project quicklook-nfo.xcodeproj -scheme QuicklookNFO -configuration Debug CONFIGURATION_BUILD_DIR=$PWD/build build"
+run = "xcodebuild -project diznfo.xcodeproj -scheme Diznfo -configuration Debug CONFIGURATION_BUILD_DIR=$PWD/build build"
 
 [tasks.register]
 description = "Build, then register the app with QuickLook (see README)"

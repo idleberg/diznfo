@@ -20,6 +20,23 @@ struct CP437Tests {
     #expect(CP437.decode([0x0A, 0x0A]) == "\n\n")
     #expect(CP437.decode([0x09]) == "\t")
   }
+
+  @Test("encodes back to the bytes it decoded from")
+  func roundTrip() {
+    // Every byte except 0x00 and 0x0D: 0x00 draws the same space as 0x20, and
+    // a lone CR is normalized to LF on the way in — neither survives a trip.
+    let bytes = (0...255).map(UInt8.init).filter { $0 != 0x00 && $0 != 0x0D }
+    #expect(Array(CP437.encode(CP437.decode(bytes))) == bytes)
+  }
+
+  @Test("writes the ASCII byte for a glyph two bytes share, and ? for the rest")
+  func encodeFallbacks() {
+    #expect(Array(CP437.encode(" ")) == [0x20])  // not 0x00
+    #expect(Array(CP437.encode("héllo")) == [0x68, 0x82, 0x6C, 0x6C, 0x6F])
+    #expect(Array(CP437.encode("日🎉")) == [0x3F, 0x3F])
+    // The caller owns line endings; encode passes through whatever it is given.
+    #expect(Array(CP437.encode("a\r\nb")) == [0x61, 0x0D, 0x0A, 0x62])
+  }
 }
 
 @Suite("SAUCE")
@@ -211,17 +228,53 @@ struct NFORendererTests {
 
   @Test("scales by the font's own cell height, and clamps a hand-edited scale")
   func fontSize() {
-    func size(_ family: String, _ scale: Int) -> Int {
+    func size(_ family: String, _ scale: Double) -> Int {
       NFORenderer.pixelSize(PreviewSettings(fontFamily: family, fontScale: scale))
     }
     #expect(size("Px437 IBM VGA 8x16", 1) == 16)
     #expect(size("Px437 IBM VGA 8x16", 2) == 32)
     #expect(size("Px437 IBM EGA 8x14", 1) == 14)
-    #expect(size("Px437 IBM VGA 9x8", 3) == 24)
+    #expect(size("Px437 IBM VGA 9x8", 4) == 32)
+    // Shrinking rounds to a whole pixel: 14 × 0.25 = 3.5.
+    #expect(size("Px437 IBM EGA 8x14", 0.25) == 4)
     // A system font carries no cell suffix, so it gets the VGA height.
     #expect(size("Menlo", 2) == 32)
-    #expect(size("Px437 IBM VGA 8x16", 0) == 16)
-    #expect(size("Px437 IBM VGA 8x16", 99) == 48)
+    #expect(size("Px437 IBM VGA 8x16", 0) == 4)
+    #expect(size("Px437 IBM VGA 8x16", 99) == 64)
+  }
+
+  @Test("steps through the scales and stops at either end")
+  func scaleStepping() {
+    #expect(PreviewSettings.fontScale(after: 1, steps: 1) == 2)
+    #expect(PreviewSettings.fontScale(after: 1, steps: -1) == 0.5)
+    #expect(PreviewSettings.fontScale(after: 4, steps: 1) == nil)
+    #expect(PreviewSettings.fontScale(after: 0.25, steps: -1) == nil)
+    // A hand-edited scale that is not on the ladder snaps back to 1×.
+    #expect(PreviewSettings.fontScale(after: 3, steps: 1) == 1)
+  }
+}
+
+@Suite("Round trip")
+struct RoundTripTests {
+  /// What `NFODocument` does on open and save. A file the user opened and
+  /// saved without touching must come back byte for byte — SAUCE record, EOF
+  /// marker and all.
+  @Test("decoding and re-encoding a real file reproduces it exactly", arguments: ["good", "bad"])
+  func fileRoundTrip(name: String) throws {
+    let url = URL(fileURLWithPath: #filePath)
+      .deletingLastPathComponent()  // NFOKitTests
+      .deletingLastPathComponent()  // Tests
+      .deletingLastPathComponent()  // repo root
+      .appending(path: "\(name).nfo")
+    let original = try Data(contentsOf: url)
+
+    let (content, _) = SauceRecord.split(original)
+    let trailer = original.dropFirst(content.count)
+    var text = CP437.decode(content)
+    if content.contains(0x0D) {
+      text = text.replacingOccurrences(of: "\n", with: "\r\n")
+    }
+    #expect(CP437.encode(text) + trailer == original)
   }
 }
 

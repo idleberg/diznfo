@@ -1,29 +1,39 @@
-# quicklook-nfo
+# diznfo
 
-> A modern, configurable Quicklook plugin for NFO/DIZ files
+> A modern, configurable viewer and Quicklook plugin for NFO/DIZ files
 
 **Features**
 
 - Faithful CP437 decoding, so box-drawing and block art render as intended
 - Four bundled DOS text-mode bitmap fonts, or any fixed-pitch system font
-- Integer zoom (1×, 2×, 3×) that keeps pixel glyphs crisp
+- Zoom in powers of two (0.25× to 4×) that keeps pixel glyphs crisp
 - Light and dark color pairs, following the system appearance or pinned
 - SAUCE metadata parsing
+- Opens `.nfo` / `.diz` read-only, with an unlock button for editing; edits
+  are written back as CP437 with the SAUCE record intact
 
-![Screenshot](https://github.com/idleberg/quicklook-nfo/blob/main/.github/resources/quicklook.png)
+![Screenshot](https://github.com/idleberg/diznfo/blob/main/.github/resources/quicklook.png)
 
 ## Installation
 
 ```sh
-brew install idleberg/asahi/quicklook-nfo
+brew install idleberg/asahi/diznfo
 ```
+
+## Usage
+
+Open an `.nfo` or `.diz` in Diznfo (double-click, or drop it on the app). The
+document opens read-only; the lock in the toolbar allows editing, and while
+editing anything past the file's standard width is shaded, so overrunning it is
+visible. `⌘+` / `⌘-` / `⌘0` zoom, and those are the same setting the Settings
+window and the QuickLook preview use.
 
 ## Settings
 
-Open `/Applications/Quicklook NFO.app` — it is a single "Quicklook NFO Settings"
-window, and every edit saves immediately; there is no OK/Apply.
+`⌘,` opens Settings. Every edit saves immediately; there is no OK/Apply, and
+the QuickLook preview picks the change up on its next render.
 
-![Screenshot](https://github.com/idleberg/quicklook-nfo/blob/main/.github/resources/settings.png)
+![Screenshot](https://github.com/idleberg/diznfo/blob/main/.github/resources/settings.png)
 
 - **Font** — four bundled DOS text-mode fonts, then any fixed-pitch family
   installed on the system. Only the bundled ones are guaranteed to line up;
@@ -32,8 +42,8 @@ window, and every edit saves immediately; there is no OK/Apply.
   - **Px437 IBM VGA 9x16** — the true VGA cell, one pixel wider per column.
   - **Px437 IBM VGA 9x8** — 80×50 mode.
   - **Px437 IBM EGA 8x14** — EGA-era art.
-- **Size** — 1×, 2× or 3×. Whole multiples of the font's own cell height, so
-  pixel glyphs never land between screen pixels.
+- **Size** — 0.25× to 4×. Powers of two of the font's own cell height, so pixel
+  glyphs never land between screen pixels in either direction.
 - **Light** / **Dark** — a text/background pair each, edited independently.
   Black on silver and silver on black by default.
 - **Appearance** — System, Light or Dark, deciding which pair a preview uses.

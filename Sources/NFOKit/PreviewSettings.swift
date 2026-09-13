@@ -14,9 +14,9 @@ public struct PreviewSettings: Codable, Equatable, Sendable {
   /// CSS/AppKit font family name. Bundled and user-picked fonts resolve the
   /// same way, so there is no separate "custom" case to branch on.
   public var fontFamily: String
-  /// Integer zoom. Pixel fonts only stay crisp at whole multiples of their
-  /// design height, so this is a multiplier rather than a point size.
-  public var fontScale: Int
+  /// Zoom multiplier rather than a point size: a pixel font only stays crisp
+  /// at powers of two of its design height, which `fontScales` enumerates.
+  public var fontScale: Double
   public var colorMode: ColorMode
 
   /// One text/background pair per appearance, as `#rrggbb`. They are
@@ -42,7 +42,17 @@ public struct PreviewSettings: Codable, Equatable, Sendable {
   public static let defaultLightBackground = "#c0c0c0"  // CSS "silver"
   public static let defaultDarkForeground = "#c0c0c0"
   public static let defaultDarkBackground = "#000000"
-  public static let fontScales = [1, 2, 3]
+  /// Symmetric around 1×, powers of two in both directions — halving a pixel
+  /// font is a clean decimation, 0.75× is a blurry mess.
+  public static let fontScales: [Double] = [0.25, 0.5, 1, 2, 4]
+
+  /// The scale `steps` positions away from `scale`, or `nil` at either end.
+  /// Used by the app's zoom commands; the settings picker indexes directly.
+  public static func fontScale(after scale: Double, steps: Int) -> Double? {
+    guard let current = fontScales.firstIndex(of: scale) else { return 1 }
+    let target = current + steps
+    return fontScales.indices.contains(target) ? fontScales[target] : nil
+  }
 
   /// The bundled files are named for their family, underscored. `nil` for a
   /// family we do not ship — the caller falls back to the default.
@@ -53,7 +63,7 @@ public struct PreviewSettings: Codable, Equatable, Sendable {
 
   public init(
     fontFamily: String = defaultFontFamily,
-    fontScale: Int = 1,
+    fontScale: Double = 1,
     colorMode: ColorMode = .system,
     lightForeground: String = defaultLightForeground,
     lightBackground: String = defaultLightBackground,
@@ -69,7 +79,7 @@ public struct PreviewSettings: Codable, Equatable, Sendable {
     self.darkBackground = darkBackground
   }
 
-  public static let extensionBundleID = "com.idleberg.QuicklookNFO.QuicklookNFOExtension"
+  public static let extensionBundleID = "com.idleberg.Diznfo.DiznfoExtension"
 
   /// Both sides agree on one file inside the *extension's* sandbox container.
   ///

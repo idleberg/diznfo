@@ -8,8 +8,8 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
-built="$PWD/build/Quicklook NFO.app"
-installed="/Applications/Quicklook NFO.app"
+built="$PWD/build/Diznfo.app"
+installed="/Applications/Diznfo.app"
 lsregister=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
 
 if [[ "${1:-}" == "--remove" ]]; then

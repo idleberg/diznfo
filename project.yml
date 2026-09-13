@@ -1,4 +1,4 @@
-name: quicklook-nfo
+name: diznfo
 options:
   bundleIdPrefix: com.idleberg
   deploymentTarget:
@@ -25,18 +25,23 @@ packages:
     path: .
 
 targets:
-  QuicklookNFO:
+  Diznfo:
     type: application
     platform: macOS
-    sources: [App]
+    sources:
+      - App
+      # The same files the extension embeds as data: URIs — the app needs them
+      # as real fonts. A folder reference so they land in Resources/Fonts,
+      # which is what ATSApplicationFontsPath points at below.
+      - path: Extension/Resources/Fonts
+        type: folder
+        buildPhase: resources
     settings:
-      # The target keeps its identifier-safe name (it is the scheme name the
-      # build task uses); only the shipped bundle is renamed.
-      PRODUCT_NAME: Quicklook NFO
-      PRODUCT_BUNDLE_IDENTIFIER: com.idleberg.QuicklookNFO
+      PRODUCT_NAME: Diznfo
+      PRODUCT_BUNDLE_IDENTIFIER: com.idleberg.Diznfo
     dependencies:
       - package: NFOKit
-      - target: QuicklookNFOExtension
+      - target: DiznfoExtension
         embed: true
         codeSign: true
     # Deliberately not sandboxed: the app has to write into the extension's
@@ -44,36 +49,46 @@ targets:
     info:
       path: App/Info.plist
       properties:
-        CFBundleName: Quicklook NFO
+        CFBundleName: Diznfo
         LSMinimumSystemVersion: "14.0"
         LSApplicationCategoryType: public.app-category.utilities
         NSHumanReadableCopyright: ""
+        # Registers the bundled Px437 families at launch, so NSFont can find
+        # them by family name without a CTFontManager call.
+        ATSApplicationFontsPath: Fonts
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: NFO Document
+            CFBundleTypeRole: Editor
+            LSHandlerRank: Owner
+            LSItemContentTypes:
+              - com.idleberg.Diznfo.nfo
+              - com.idleberg.Diznfo.diz
         UTExportedTypeDeclarations:
-          - UTTypeIdentifier: com.idleberg.QuicklookNFO.nfo
+          - UTTypeIdentifier: com.idleberg.Diznfo.nfo
             UTTypeDescription: NFO Document
             UTTypeConformsTo: [public.plain-text]
             UTTypeTagSpecification:
               public.filename-extension: [nfo]
-          - UTTypeIdentifier: com.idleberg.QuicklookNFO.diz
+          - UTTypeIdentifier: com.idleberg.Diznfo.diz
             UTTypeDescription: Description in Zip
             UTTypeConformsTo: [public.plain-text]
             UTTypeTagSpecification:
               public.filename-extension: [diz]
 
-  QuicklookNFOExtension:
+  DiznfoExtension:
     type: app-extension
     platform: macOS
     sources: [Extension]
     settings:
       # macOS rejects an app extension whose bundle id is not prefixed by its
       # containing app's — it silently never registers with QuickLook.
-      PRODUCT_BUNDLE_IDENTIFIER: com.idleberg.QuicklookNFO.QuicklookNFOExtension
+      PRODUCT_BUNDLE_IDENTIFIER: com.idleberg.Diznfo.DiznfoExtension
     dependencies:
       - package: NFOKit
       - sdk: QuickLookUI.framework
       - sdk: WebKit.framework
     entitlements:
-      path: Extension/QuicklookNFOExtension.entitlements
+      path: Extension/DiznfoExtension.entitlements
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.files.user-selected.read-only: true
@@ -84,11 +99,11 @@ targets:
     info:
       path: Extension/Info.plist
       properties:
-        CFBundleDisplayName: Quicklook NFO Preview
+        CFBundleDisplayName: Diznfo Preview
         CFBundlePackageType: XPC!
         NSExtension:
           NSExtensionPointIdentifier: com.apple.quicklook.preview
           NSExtensionPrincipalClass: PreviewViewController
           NSExtensionAttributes:
-            QLSupportedContentTypes: [com.idleberg.QuicklookNFO.nfo, com.idleberg.QuicklookNFO.diz]
+            QLSupportedContentTypes: [com.idleberg.Diznfo.nfo, com.idleberg.Diznfo.diz]
             QLSupportsSearchableItems: false

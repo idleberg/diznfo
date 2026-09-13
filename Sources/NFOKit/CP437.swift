@@ -13,6 +13,29 @@ public enum CP437 {
   )
   // swiftlint:enable line_length
 
+  /// Reverse of `table`. Several bytes draw the same glyph (0x00 and 0x20 are
+  /// both a space), so later entries win — the plain ASCII byte is always the
+  /// higher one, which is the one worth writing back.
+  ///
+  /// Keyed by scalar rather than `Character`: Swift folds CRLF into a single
+  /// `Character`, which would encode a DOS line ending as one `?`.
+  private static let reverse: [Unicode.Scalar: UInt8] = {
+    var map: [Unicode.Scalar: UInt8] = [:]
+    for byte in 0...255 { map[table[byte].unicodeScalars.first!] = UInt8(byte) }
+    // Restore the three the decoder keeps as control characters.
+    map["\t"] = 0x09
+    map["\n"] = 0x0A
+    map["\r"] = 0x0D
+    return map
+  }()
+
+  /// Encodes back to CP437. Characters with no CP437 glyph become `?` — the
+  /// same substitution DOS itself made. Line endings are the caller's call:
+  /// whatever is in the string is what gets written.
+  public static func encode(_ text: String) -> Data {
+    Data(text.unicodeScalars.map { reverse[$0] ?? 0x3F })
+  }
+
   /// Decodes CP437 bytes and normalizes DOS line endings (CRLF / lone CR → LF).
   public static func decode(_ bytes: some Sequence<UInt8>) -> String {
     var out = ""

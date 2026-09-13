@@ -111,10 +111,13 @@ public enum NFORenderer {
   /// A pixel font is only crisp at whole multiples of its design height, and
   /// the int10h families carry that height in their `WxH` cell suffix. A font
   /// with no such suffix (any system pick) gets the 16px VGA height.
-  static func pixelSize(_ settings: PreviewSettings) -> Int {
-    let height = settings.fontFamily.split(separator: "x").last.flatMap { Int($0) } ?? 16
+  public static func pixelSize(_ settings: PreviewSettings) -> Int {
+    let height = settings.fontFamily.split(separator: "x").last.flatMap { Double($0) } ?? 16
     // The scale reaches here from a JSON file on disk, so it is clamped.
-    return height * min(max(settings.fontScale, 1), PreviewSettings.fontScales.max()!)
+    let scale = min(
+      max(settings.fontScale, PreviewSettings.fontScales.min()!),
+      PreviewSettings.fontScales.max()!)
+    return max(1, Int((height * scale).rounded()))
   }
 
   private static func escape(_ string: String) -> String {

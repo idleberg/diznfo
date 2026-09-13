@@ -34,8 +34,8 @@ jobs:
       - name: Build Release (${{ matrix.arch }})
         run: |
           xcodebuild \
-            -project quicklook-nfo.xcodeproj \
-            -scheme QuicklookNFO \
+            -project diznfo.xcodeproj \
+            -scheme Diznfo \
             -configuration Release \
             -derivedDataPath build \
             -arch ${{ matrix.arch }} \
@@ -49,16 +49,16 @@ jobs:
       - name: Package app
         run: |
           cd "build/Build/Products/Release"
-          zip -r -9 quicklook-nfo.zip "Quicklook NFO.app"
-          mv quicklook-nfo.zip "$GITHUB_WORKSPACE/quicklook-nfo-v${{ steps.version.outputs.version }}-${{ matrix.arch }}.zip"
+          zip -r -9 diznfo.zip "Diznfo.app"
+          mv diznfo.zip "$GITHUB_WORKSPACE/diznfo-v${{ steps.version.outputs.version }}-${{ matrix.arch }}.zip"
 
       - name: Generate checksums
-        run: sha256sum quicklook-nfo-v${{ steps.version.outputs.version }}-${{ matrix.arch }}.zip > SHA256SUMS
+        run: sha256sum diznfo-v${{ steps.version.outputs.version }}-${{ matrix.arch }}.zip > SHA256SUMS
 
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            quicklook-nfo-v${{ steps.version.outputs.version }}-${{ matrix.arch }}.zip
+            diznfo-v${{ steps.version.outputs.version }}-${{ matrix.arch }}.zip
             SHA256SUMS
           generate_release_notes: ${{ matrix.arch == 'arm64' }}

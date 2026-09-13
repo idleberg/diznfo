@@ -3,11 +3,37 @@ import NFOKit
 import SwiftUI
 
 @main
-struct QuicklookNFOApp: App {
+struct DiznfoApp: App {
+  @State private var store = SettingsStore()
+
   var body: some Scene {
+    DocumentGroup(viewing: NFODocument.self) { file in
+      NFODocumentView(document: file.$document)
+        .environment(store)
+    }
+    // Roughly 80×50 cells of the default font, plus the padding — .nfo files
+    // run long, so the extra height is worth more than the width.
+    .defaultSize(width: 700, height: 920)
+    .commands {
+      // Replaces the stock Zoom In/Out, which act on the window, not the text.
+      CommandGroup(after: .toolbar) {
+        Button("Zoom In") { store.zoom(by: 1) }
+          .keyboardShortcut("+")
+          .disabled(!store.canZoom(by: 1))
+        Button("Zoom Out") { store.zoom(by: -1) }
+          .keyboardShortcut("-")
+          .disabled(!store.canZoom(by: -1))
+        Button("Actual Size") { store.settings.fontScale = 1 }
+          .keyboardShortcut("0")
+          .disabled(store.settings.fontScale == 1)
+        Divider()
+      }
+    }
+
     // "Settings" is the HIG term since Ventura; "Preferences" is retired.
-    Window("Quicklook NFO Settings", id: "settings") {
+    Settings {
       PreferencesView()
+        .environment(store)
         .frame(width: 420)
         .fixedSize(horizontal: false, vertical: true)
     }
@@ -15,8 +41,32 @@ struct QuicklookNFOApp: App {
   }
 }
 
+/// An open document: read-only until the lock in the toolbar says otherwise.
+struct NFODocumentView: View {
+  @Binding var document: NFODocument
+  @Environment(SettingsStore.self) private var store
+  @State private var isEditable = false
+
+  var body: some View {
+    NFOTextView(
+      text: $document.text,
+      columns: document.columns,
+      settings: store.settings,
+      isEditable: isEditable
+    )
+    .toolbar {
+      Toggle(isOn: $isEditable) {
+        Label(
+          isEditable ? "Lock" : "Unlock",
+          systemImage: isEditable ? "lock.open.fill" : "lock.fill")
+      }
+      .help(isEditable ? "Make this file read-only" : "Allow editing this file")
+    }
+  }
+}
+
 struct PreferencesView: View {
-  @State private var settings = PreviewSettings.load()
+  @Environment(SettingsStore.self) private var store
   /// Keyed by the settings key path — one identity per color well, for free.
   @FocusState private var focusedSwatch: WritableKeyPath<PreviewSettings, String>?
 
@@ -36,9 +86,12 @@ struct PreferencesView: View {
   }()
 
   var body: some View {
-    Form {
+    @Bindable var store = store
+    let settings = store.settings
+
+    return Form {
       Section {
-        Picker("Font:", selection: $settings.fontFamily) {
+        Picker("Font:", selection: $store.settings.fontFamily) {
           ForEach(PreviewSettings.bundledFontFamilies, id: \.self) { family in
             Text(family).tag(family)
           }
@@ -48,10 +101,11 @@ struct PreferencesView: View {
           }
         }
 
-        // Whole multiples only — a pixel font at 1.5x is a blurry pixel font.
-        Picker("Size:", selection: $settings.fontScale) {
+        // Powers of two only — a pixel font at 1.5× is a blurry pixel font.
+        // ⌘+ / ⌘- / ⌘0 in a document window move this same control.
+        Picker("Size:", selection: $store.settings.fontScale) {
           ForEach(PreviewSettings.fontScales, id: \.self) { scale in
-            Text("\(scale)×").tag(scale)
+            Text("\(scale.formatted(.number))×").tag(scale)
           }
         }
         .pickerStyle(.segmented)
@@ -67,7 +121,7 @@ struct PreferencesView: View {
       }
 
       Section("Colors") {
-        Picker("Appearance:", selection: $settings.colorMode) {
+        Picker("Appearance:", selection: $store.settings.colorMode) {
           Text("System").tag(PreviewSettings.ColorMode.system)
           Text("Light").tag(PreviewSettings.ColorMode.light)
           Text("Dark").tag(PreviewSettings.ColorMode.dark)
@@ -85,14 +139,13 @@ struct PreferencesView: View {
           Text("Restores the font, size and colors to their defaults.")
             .font(.subheadline)
           Spacer()
-          // Assigning the defaults goes through onChange like any other edit.
-          Button("Reset") { settings = PreviewSettings() }
+          // Assigning the defaults saves like any other edit.
+          Button("Reset") { store.settings = PreviewSettings() }
             .disabled(settings == PreviewSettings())
         }
       }
     }
     .formStyle(.grouped)
-    .onChange(of: settings) { _, new in new.save() }
   }
 
   /// Both wells on a single line, so the pair reads as one setting.
@@ -139,30 +192,8 @@ struct PreferencesView: View {
   /// `ColorPicker` speaks `Color`, `PreviewSettings` stores `#rrggbb` for CSS.
   private func hexBinding(_ path: WritableKeyPath<PreviewSettings, String>) -> Binding<Color> {
     Binding(
-      get: { Color(hex: settings[keyPath: path]) },
-      set: { settings[keyPath: path] = $0.hex }
+      get: { Color(hex: store.settings[keyPath: path]) },
+      set: { store.settings[keyPath: path] = $0.hex }
     )
-  }
-}
-
-extension Color {
-  fileprivate init(hex: String) {
-    let value = UInt32(hex.dropFirst(), radix: 16) ?? 0
-    self.init(
-      .sRGB,
-      red: Double((value >> 16) & 0xFF) / 255,
-      green: Double((value >> 8) & 0xFF) / 255,
-      blue: Double(value & 0xFF) / 255
-    )
-  }
-
-  fileprivate var hex: String {
-    guard let rgb = NSColor(self).usingColorSpace(.sRGB) else {
-      return PreviewSettings.defaultLightForeground
-    }
-    let channel = { (value: CGFloat) in Int((value * 255).rounded()) }
-    return String(
-      format: "#%02x%02x%02x", channel(rgb.redComponent), channel(rgb.greenComponent),
-      channel(rgb.blueComponent))
   }
 }
