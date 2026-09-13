@@ -259,15 +259,16 @@ struct RoundTripTests {
   /// What `NFODocument` does on open and save. A file the user opened and
   /// saved without touching must come back byte for byte — SAUCE record, EOF
   /// marker and all.
-  @Test("decoding and re-encoding a real file reproduces it exactly", arguments: ["good", "bad"])
-  func fileRoundTrip(name: String) throws {
-    let url = URL(fileURLWithPath: #filePath)
-      .deletingLastPathComponent()  // NFOKitTests
-      .deletingLastPathComponent()  // Tests
-      .deletingLastPathComponent()  // repo root
-      .appending(path: "\(name).nfo")
-    let original = try Data(contentsOf: url)
-
+  @Test(
+    "decoding and re-encoding a file reproduces it exactly",
+    arguments: [
+      // DOS line endings, high glyphs, SAUCE record with a COMNT block
+      Data([0xDA, 0xC4, 0xBF, 0x0D, 0x0A, 0xB3, 0xDB, 0xB3, 0x0D, 0x0A, 0xFE, 0xE1])
+        + SauceTests.file(art: "", comments: ["hi"]),
+      // Unix line endings, no trailer
+      Data([0xB0, 0xB1, 0xB2, 0x0A, 0x41, 0x0A]),
+    ])
+  func fileRoundTrip(original: Data) {
     let (content, _) = SauceRecord.split(original)
     let trailer = original.dropFirst(content.count)
     var text = CP437.decode(content)
