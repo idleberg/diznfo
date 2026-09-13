@@ -42,7 +42,7 @@ struct NFOTextView: NSViewRepresentable {
     // of container padding would put it five points off.
     textView.textContainer?.lineFragmentPadding = 0
 
-    let scrollView = NSScrollView()
+    let scrollView = CornerFillingScrollView()
     scrollView.documentView = textView
     scrollView.hasVerticalScroller = true
     scrollView.hasHorizontalScroller = true
@@ -189,6 +189,22 @@ final class ColumnGuideTextView: NSTextView {
     let shade = background.brightnessComponent < 0.2 ? NSColor.white : NSColor.black
     background.blended(withFraction: 0.2, of: shade)?.setFill()
     NSRect(x: start, y: rect.minY, width: rect.maxX - start, height: rect.height).fill()
+  }
+}
+
+/// With both scrollers showing, AppKit fills the square between them with a
+/// system color that ignores `backgroundColor`; paint it to match the art.
+final class CornerFillingScrollView: NSScrollView {
+  override func draw(_ dirtyRect: NSRect) {
+    super.draw(dirtyRect)
+    guard let vertical = verticalScroller, let horizontal = horizontalScroller,
+      !vertical.isHidden, !horizontal.isHidden, scrollerStyle == .legacy
+    else { return }
+    backgroundColor.setFill()
+    NSRect(
+      x: vertical.frame.minX, y: horizontal.frame.minY,
+      width: vertical.frame.width, height: horizontal.frame.height
+    ).fill()
   }
 }
 
