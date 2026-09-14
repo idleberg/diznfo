@@ -155,11 +155,12 @@ struct PreviewSettingsTests {
 struct NFORendererTests {
   @Test("renders decoded art, honouring the SAUCE width and the user's colors")
   func rendersArt() {
-    let art = Data([0xDB, 0xB0, 0x0D, 0x0A, 0x41])
+    // Not `DB B0` alone: those two bytes happen to be valid UTF-8.
+    let art = Data([0xDB, 0xB0, 0xB1, 0x0D, 0x0A, 0x41])
     var file = art
     file.append(SauceTests.file(art: "", width: 132).suffix(128))
     let html = NFORenderer.html(for: file, settings: PreviewSettings(colorMode: .light))
-    #expect(html.contains("█░\nA"))
+    #expect(html.contains("█░▒\nA"))
     #expect(html.contains("width: 132ch"))
     #expect(html.contains("background: \(PreviewSettings.defaultLightBackground)"))
   }
@@ -321,25 +322,62 @@ struct ANSITests {
   @Test("colors: bold brightens, blink brightens the background only with iCE, 7 inverts")
   func colors() {
     let plain = Self.parse("^[1;31;44mx")
-    #expect(plain == [.init(text: "x", foreground: 9, background: 4)])
-    #expect(Self.parse("^[5;44mx")[0].background == 4)
-    #expect(Self.parse("^[5;44mx", ice: true)[0].background == 12)
+    #expect(plain == [.init(text: "x", foreground: .palette(9), background: .palette(4))])
+    #expect(Self.parse("^[5;44mx")[0].background == .palette(4))
+    #expect(Self.parse("^[5;44mx", ice: true)[0].background == .palette(12))
     #expect(
       Self.parse("^[7;32mx^[27my") == [
-        .init(text: "x", foreground: 0, background: 2),
-        .init(text: "y", foreground: 2, background: 0),
+        .init(text: "x", foreground: .palette(0), background: .palette(2)),
+        .init(text: "y", foreground: .palette(2), background: .palette(0)),
       ])
-    #expect(Self.parse("^[1;33mx^[mz").last == .init(text: "z", foreground: 7, background: 0))
+    #expect(
+      Self.parse("^[1;33mx^[mz").last
+        == .init(text: "z", foreground: .palette(7), background: .palette(0)))
   }
 
   @Test("inverse drops the background's brightness and keeps the foreground's")
   func brightInverse() {
     // Bold red on blue → bright blue on red.
-    #expect(Self.parse("^[1;31;44;7mx")[0] == .init(text: "x", foreground: 12, background: 1))
+    #expect(
+      Self.parse("^[1;31;44;7mx")[0]
+        == .init(text: "x", foreground: .palette(12), background: .palette(1)))
     // iCE-bright blue under bold red stays on the palette.
     #expect(
-      Self.parse("^[1;5;31;44;7mx", ice: true)[0] == .init(text: "x", foreground: 12, background: 1)
-    )
+      Self.parse("^[1;5;31;44;7mx", ice: true)[0]
+        == .init(text: "x", foreground: .palette(12), background: .palette(1)))
+  }
+
+  @Test("xterm colors: bright, 256, truecolor, defaults — and bold leaves them be")
+  func xtermColors() {
+    #expect(
+      Self.parse("^[93;104mx")[0]
+        == .init(text: "x", foreground: .palette(11), background: .palette(12)))
+    #expect(Self.parse("^[1;38;5;196mx")[0].foreground == .palette(196))
+    // The arguments are not codes: `2;1;5` must not turn on bold or blink.
+    let rgb = Self.parse("^[48;2;1;5;7;31mx", ice: true)[0]
+    #expect(rgb == .init(text: "x", foreground: .palette(1), background: .rgb(1, 5, 7)))
+    #expect(
+      Self.parse("^[31;44;39;49mx")[0]
+        == .init(text: "x", foreground: .palette(7), background: .palette(0)))
+    #expect(
+      Self.parse("^[38;2;9;9;9;48;5;232;7mx")[0]
+        == .init(text: "x", foreground: .palette(232), background: .rgb(9, 9, 9)))
+  }
+
+  @Test("resolves the VGA sixteen, the 256-color cube and grey ramp, and truecolor")
+  func colorValues() {
+    #expect(ANSI.color(.palette(9)) == "#ff5555")
+    #expect(ANSI.color(.palette(196)) == "#ff0000")
+    #expect(ANSI.color(.palette(67)) == "#5f87af")
+    #expect(ANSI.color(.palette(244)) == "#808080")
+    #expect(ANSI.color(.rgb(1, 171, 255)) == "#01abff")
+  }
+
+  @Test("decodes UTF-8 glyphs one screen cell each")
+  func utf8Glyphs() {
+    let art = Data("^[31m🬀█\u{A0}é".replacingOccurrences(of: "^", with: "\u{1B}").utf8)
+    let spans = ANSI.parse(art, columns: 2, iceColors: false, isUTF8: true)
+    #expect(Self.text(spans) == "🬀█\n\u{A0}é")
   }
 
   @Test("skips sequences it does not know, and decodes glyphs as CP437")
@@ -371,6 +409,9 @@ struct RoundTripTests {
       Data([0xB0, 0xB1, 0xB2, 0x0A, 0x41, 0x0A]),
       // ANSI art, whose plain text drops the escape codes
       Data("\u{1B}[1;31mred\u{1B}[0m\r\n".utf8) + SauceTests.file(art: ""),
+      // UTF-8, with and without a BOM
+      Data("┌─┐\r\n│é│".utf8),
+      Data([0xEF, 0xBB, 0xBF]) + Data("hi\n".utf8),
     ])
   func fileRoundTrip(original: Data) {
     let file = NFOFile(data: original, pathExtension: "nfo")
@@ -381,6 +422,18 @@ struct RoundTripTests {
   func editedText() {
     let file = NFOFile(data: Data("a\r\nb".utf8), pathExtension: "nfo")
     #expect(file.data(text: "a\nc") == Data("a\r\nc".utf8))
+  }
+
+  @Test("reads UTF-8 by a BOM or by decoding, and anything else as CP437")
+  func encodingDetection() {
+    func text(_ bytes: Data) -> String { NFOFile(data: bytes, pathExtension: "nfo").text }
+    #expect(text(Data("┌─┐".utf8)) == "┌─┐")
+    #expect(text(Data([0xEF, 0xBB, 0xBF, 0x41])) == "A")
+    // `C4 B3` happens to be valid UTF-8 (ĳ), but `DB` after it is not.
+    #expect(text(Data([0xC4, 0xB3, 0xDB])) == "─│█")
+    // Characters CP437 lacks survive an edit of a UTF-8 file.
+    let file = NFOFile(data: Data("é".utf8), pathExtension: "nfo")
+    #expect(file.data(text: "€") == Data("€".utf8))
   }
 }
 

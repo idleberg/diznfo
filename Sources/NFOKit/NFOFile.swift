@@ -23,6 +23,11 @@ public struct NFOFile: Sendable {
   private let preserved: Data
   /// DOS files are CRLF; a file that arrived with LF is written back with LF.
   private let usesCRLF: Bool
+  /// Art is CP437 unless it is UTF-8 — and saved in whichever it was.
+  private let isUTF8: Bool
+  private let hasBOM: Bool
+
+  private static let bom = Data([0xEF, 0xBB, 0xBF])
 
   /// - Parameter pathExtension: `.ans` is ANSI art even without a single
   ///   escape code. See `ANSI.isANSI`.
@@ -30,12 +35,25 @@ public struct NFOFile: Sendable {
     let (art, sauce) = SauceRecord.split(data)
     columns = sauce?.width ?? NFORenderer.defaultColumns
     usesCRLF = art.contains(0x0D)
-    if ANSI.isANSI(art, pathExtension: pathExtension) {
+    hasBOM = art.starts(with: Self.bom)
+    let body = hasBOM ? art.dropFirst(Self.bom.count) : art
+    // Any bytes at all are valid CP437, so UTF-8 has to prove itself: a BOM,
+    // or a whole file that decodes and is not plain ASCII. CP437 art almost
+    // never decodes by accident.
+    isUTF8 = hasBOM || (body.contains { $0 >= 0x80 } && String(data: body, encoding: .utf8) != nil)
+
+    if ANSI.isANSI(body, pathExtension: pathExtension) {
       content = .ansi(
-        ANSI.parse(art, columns: columns, iceColors: sauce?.usesICEColors ?? false))
+        ANSI.parse(
+          body, columns: columns, iceColors: sauce?.usesICEColors ?? false, isUTF8: isUTF8))
       preserved = data
     } else {
-      content = .text(CP437.decode(art))
+      content = .text(
+        isUTF8
+          ? String(decoding: body, as: UTF8.self)
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\r", with: "\n")
+          : CP437.decode(body))
       // `split` returns a prefix, so whatever follows it is not art.
       preserved = data.dropFirst(art.count)
     }
@@ -54,6 +72,7 @@ public struct NFOFile: Sendable {
   public func data(text: String) -> Data {
     guard case .text = content else { return preserved }
     let art = usesCRLF ? text.replacingOccurrences(of: "\n", with: "\r\n") : text
-    return CP437.encode(art) + preserved
+    guard isUTF8 else { return CP437.encode(art) + preserved }
+    return (hasBOM ? Self.bom : Data()) + Data(art.utf8) + preserved
   }
 }
