@@ -213,6 +213,20 @@ struct NFORendererTests {
     #expect(html.contains("&lt;b&gt;&amp;&quot;&lt;/b&gt;"))
   }
 
+  @Test("renders ANSI art in the VGA palette, ignoring the user's colors")
+  func rendersANSI() {
+    let html = NFORenderer.html(
+      for: Data("\u{1B}[1;31mhi\u{1B}[0m <".utf8), settings: PreviewSettings(colorMode: .light))
+    #expect(html.contains("<span style=\"color:#ff5555;background:#000000\">hi</span> &lt;"))
+    #expect(html.contains("background: #000000"))
+    // A plain .ans takes the same path.
+    #expect(
+      NFORenderer.html(
+        for: Data("x".utf8), pathExtension: "ans", settings: PreviewSettings(colorMode: .light)
+      )
+      .contains("background: #000000"))
+  }
+
   @Test("embeds a font-face only when a bundled font file is given")
   func fontFace() {
     let data = Data("x".utf8)
@@ -251,6 +265,75 @@ struct NFORendererTests {
     #expect(PreviewSettings.fontScale(after: 0.25, steps: -1) == nil)
     // A hand-edited scale that is not on the ladder snaps back to 1×.
     #expect(PreviewSettings.fontScale(after: 3, steps: 1) == 1)
+  }
+}
+
+@Suite("ANSI")
+struct ANSITests {
+  static func parse(_ art: String, columns: Int = 80, ice: Bool = false) -> [ANSI.Span] {
+    ANSI.parse(
+      Data(art.replacingOccurrences(of: "^", with: "\u{1B}").utf8), columns: columns, iceColors: ice
+    )
+  }
+
+  static func text(_ spans: [ANSI.Span]) -> String {
+    spans.map(\.text).joined()
+  }
+
+  @Test("detects .ans by extension and anything else by a CSI")
+  func detection() {
+    #expect(ANSI.isANSI(Data("plain".utf8), pathExtension: "ANS"))
+    #expect(!ANSI.isANSI(Data("plain".utf8), pathExtension: "nfo"))
+    #expect(ANSI.isANSI(Data("\u{1B}[0m".utf8), pathExtension: "diz"))
+    #expect(!ANSI.isANSI(Data("\u{1B}".utf8), pathExtension: "nfo"))
+  }
+
+  @Test("cursor-forward skips cells, which read back as spaces")
+  func cursorForward() {
+    #expect(Self.text(Self.parse("^[3Cx^[Cy")) == "   x y")
+  }
+
+  @Test("a full-width line wraps, and the cursor-up that follows rejoins it — ACiD 50")
+  func wrapAndCursorUp() {
+    let full = String(repeating: "a", count: 4)
+    #expect(Self.text(Self.parse("\(full)\r\n^[A^[2Cb", columns: 4)) == "aaaa\n  b")
+  }
+
+  @Test("positions, saves and restores the cursor, and clears the screen")
+  func positioning() {
+    #expect(Self.text(Self.parse("^[2;3Hx^[Hy")) == "y\n  x")
+    #expect(Self.text(Self.parse("ab^[sxyz^[uQ")) == "abQyz")
+    #expect(Self.text(Self.parse("gone^[2Jkept")) == "kept")
+    // Moves past the top-left corner stop there.
+    #expect(Self.text(Self.parse("^[5Dx^[99Ay")) == "xy")
+  }
+
+  @Test("colors: bold brightens, blink brightens the background only with iCE, 7 inverts")
+  func colors() {
+    let plain = Self.parse("^[1;31;44mx")
+    #expect(plain == [.init(text: "x", foreground: 9, background: 4)])
+    #expect(Self.parse("^[5;44mx")[0].background == 4)
+    #expect(Self.parse("^[5;44mx", ice: true)[0].background == 12)
+    #expect(
+      Self.parse("^[7;32mx^[27my") == [
+        .init(text: "x", foreground: 0, background: 2),
+        .init(text: "y", foreground: 2, background: 0),
+      ])
+    #expect(Self.parse("^[1;33mx^[mz").last == .init(text: "z", foreground: 7, background: 0))
+  }
+
+  @Test("skips sequences it does not know, and decodes glyphs as CP437")
+  func unknownAndGlyphs() {
+    let spans = ANSI.parse(
+      Data([0x1B, 0x5B, 0x3F, 0x37, 0x68, 0xDB, 0x1B, 0x5B, 0x4B, 0xB0, 0x1A, 0x41]), columns: 80,
+      iceColors: false)
+    #expect(Self.text(spans) == "█░")
+  }
+
+  @Test("drops trailing blanks, but not ones with a background")
+  func trailingBlanks() {
+    #expect(Self.text(Self.parse("x   \r\n\r\n")) == "x")
+    #expect(Self.text(Self.parse("x^[41m  ")) == "x  ")
   }
 }
 

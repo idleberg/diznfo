@@ -3,7 +3,7 @@ import NFOKit
 import QuickLookUI
 import WebKit
 
-/// QuickLook preview for `.nfo` / `.diz` files.
+/// QuickLook preview for `.nfo` / `.diz` / `.ans` files.
 @objc(PreviewViewController)
 final class PreviewViewController: NSViewController, QLPreviewingController {
   /// Fonts: The Ultimate Oldschool PC Font Pack by VileR (int10h.org), CC BY-SA 4.0.
@@ -43,6 +43,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     let settings = PreviewSettings.load()
     let html = NFORenderer.html(
       for: data,
+      pathExtension: url.pathExtension,
       settings: settings,
       font: Self.bundledFont(for: settings),
       isDarkAppearance: isDark

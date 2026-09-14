@@ -64,6 +64,12 @@ targets:
             LSItemContentTypes:
               - com.idleberg.Diznfo.nfo
               - com.idleberg.Diznfo.diz
+          # Read-only: the art is cursor moves and color codes, not text.
+          - CFBundleTypeName: ANSI Art
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Owner
+            LSItemContentTypes:
+              - com.idleberg.Diznfo.ans
         UTExportedTypeDeclarations:
           - UTTypeIdentifier: com.idleberg.Diznfo.nfo
             UTTypeDescription: NFO Document
@@ -75,6 +81,12 @@ targets:
             UTTypeConformsTo: [public.plain-text]
             UTTypeTagSpecification:
               public.filename-extension: [diz]
+          # Not plain text — escape codes would show up as garbage in an editor.
+          - UTTypeIdentifier: com.idleberg.Diznfo.ans
+            UTTypeDescription: ANSI Art
+            UTTypeConformsTo: [public.data]
+            UTTypeTagSpecification:
+              public.filename-extension: [ans]
 
   DiznfoExtension:
     type: app-extension
@@ -106,5 +118,6 @@ targets:
           NSExtensionPointIdentifier: com.apple.quicklook.preview
           NSExtensionPrincipalClass: PreviewViewController
           NSExtensionAttributes:
-            QLSupportedContentTypes: [com.idleberg.Diznfo.nfo, com.idleberg.Diznfo.diz]
+            QLSupportedContentTypes: 
+              [com.idleberg.Diznfo.nfo, com.idleberg.Diznfo.diz, com.idleberg.Diznfo.ans]
             QLSupportsSearchableItems: false

@@ -50,17 +50,21 @@ struct NFODocumentView: View {
   var body: some View {
     NFOTextView(
       text: $document.text,
+      ansiSpans: document.ansiSpans,
       columns: document.columns,
       settings: store.settings,
       isEditable: isEditable
     )
     .toolbar {
-      Toggle(isOn: $isEditable) {
-        Label(
-          isEditable ? "Lock" : "Unlock",
-          systemImage: isEditable ? "lock.open.fill" : "lock.fill")
+      // ANSI art is escape codes, not text — there is nothing to unlock.
+      if document.ansiSpans == nil {
+        Toggle(isOn: $isEditable) {
+          Label(
+            isEditable ? "Lock" : "Unlock",
+            systemImage: isEditable ? "lock.open.fill" : "lock.fill")
+        }
+        .help(isEditable ? "Make this file read-only" : "Allow editing this file")
       }
-      .help(isEditable ? "Make this file read-only" : "Allow editing this file")
     }
   }
 }

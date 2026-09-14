@@ -36,6 +36,12 @@ public enum CP437 {
     Data(text.unicodeScalars.map { reverse[$0] ?? 0x3F })
   }
 
+  /// The glyph DOS drew for one byte, control range included — for callers
+  /// that handle line endings and escapes themselves.
+  public static func glyph(_ byte: UInt8) -> Character {
+    table[Int(byte)]
+  }
+
   /// Decodes CP437 bytes and normalizes DOS line endings (CRLF / lone CR → LF).
   public static func decode(_ bytes: some Sequence<UInt8>) -> String {
     var out = ""

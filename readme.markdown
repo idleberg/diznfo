@@ -9,6 +9,8 @@
 - Zoom in powers of two (0.25× to 4×) that keeps pixel glyphs crisp
 - Light and dark color pairs, following the system appearance or pinned
 - SAUCE metadata parsing
+- ANSI art (`.ans`, or `.nfo` / `.diz` with escape codes) in the VGA palette,
+  including iCE colors
 - Opens `.nfo` / `.diz` read-only, with an unlock button for editing; edits
   are written back as CP437 with the SAUCE record intact
 
@@ -25,7 +27,8 @@ brew install idleberg/asahi/diznfo
 Open an `.nfo` or `.diz` in Diznfo (double-click, or drop it on the app). The
 document opens read-only; the lock in the toolbar allows editing, and while
 editing anything past the file's standard width is shaded, so overrunning it is
-visible. `⌘+` / `⌘-` / `⌘0` zoom, and those are the same setting the Settings
+visible. ANSI art has no lock: it is always read-only and ignores the color
+settings, since its colors are part of the artwork. `⌘+` / `⌘-` / `⌘0` zoom, and those are the same setting the Settings
 window and the QuickLook preview use.
 
 ## Settings

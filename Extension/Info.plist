@@ -28,6 +28,7 @@
 			<array>
 				<string>com.idleberg.Diznfo.nfo</string>
 				<string>com.idleberg.Diznfo.diz</string>
+				<string>com.idleberg.Diznfo.ans</string>
 			</array>
 			<key>QLSupportsSearchableItems</key>
 			<false/>

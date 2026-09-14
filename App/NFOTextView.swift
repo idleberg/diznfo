@@ -6,6 +6,9 @@ import SwiftUI
 /// art never reflows or re-renders when the lock is flipped.
 struct NFOTextView: NSViewRepresentable {
   @Binding var text: String
+  /// ANSI art's colors. When set, the view shows these instead of `text` and
+  /// never becomes editable.
+  let ansiSpans: [ANSI.Span]?
   let columns: Int
   let settings: PreviewSettings
   let isEditable: Bool
@@ -54,13 +57,11 @@ struct NFOTextView: NSViewRepresentable {
     guard let textView = scrollView.documentView as? ColumnGuideTextView else { return }
     context.coordinator.text = $text
 
-    if textView.string != text {
-      textView.string = text
-    }
-
     let font = Self.font(for: settings)
-    let palette = NFORenderer.Palette.resolve(
-      settings, isDarkAppearance: textView.effectiveAppearance.isDark)
+    let palette =
+      ansiSpans == nil
+      ? NFORenderer.Palette.resolve(settings, isDarkAppearance: textView.effectiveAppearance.isDark)
+      : .ansi
     let foreground = NSColor(hex: palette.foreground)
 
     // The HTML preview sets `line-height: 1.0`; the equivalent here is a line
@@ -73,11 +74,30 @@ struct NFOTextView: NSViewRepresentable {
     textView.typingAttributes = [
       .font: font, .foregroundColor: foreground, .paragraphStyle: paragraph,
     ]
-    textView.textStorage?.setAttributes(
-      textView.typingAttributes, range: NSRange(location: 0, length: textView.string.utf16.count))
+    // Before the text: `textColor` recolors everything already in the view,
+    // which would flatten ANSI art to a single color.
+    textView.textColor = foreground
+    if let spans = ansiSpans {
+      let art = NSMutableAttributedString()
+      for span in spans {
+        var attributes = textView.typingAttributes
+        attributes[.foregroundColor] = NSColor(hex: ANSI.vga[Int(span.foreground)])
+        // The view's own background already is the default one.
+        if span.background != ANSI.defaultBackground {
+          attributes[.backgroundColor] = NSColor(hex: ANSI.vga[Int(span.background)])
+        }
+        art.append(NSAttributedString(string: span.text, attributes: attributes))
+      }
+      textView.textStorage?.setAttributedString(art)
+    } else {
+      if textView.string != text {
+        textView.string = text
+      }
+      textView.textStorage?.setAttributes(
+        textView.typingAttributes, range: NSRange(location: 0, length: textView.string.utf16.count))
+    }
 
     let background = NSColor(hex: palette.background)
-    textView.textColor = foreground
     textView.backgroundColor = background
     // The text view is only as wide as the art; without this the window shows
     // system grey either side of it.
@@ -91,6 +111,7 @@ struct NFOTextView: NSViewRepresentable {
     // `padding: 1em` in the preview.
     textView.textContainerInset = NSSize(width: font.pointSize, height: font.pointSize)
 
+    let isEditable = isEditable && ansiSpans == nil
     textView.isEditable = isEditable
     // The guide only means something while typing, and it would otherwise read
     // as part of the artwork.

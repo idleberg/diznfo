@@ -9,6 +9,11 @@ public enum NFORenderer {
     public var foreground: String
     public var background: String
 
+    /// ANSI art's page: its own default grey on black, whatever the settings.
+    public static let ansi = Palette(
+      foreground: ANSI.vga[Int(ANSI.defaultForeground)],
+      background: ANSI.vga[Int(ANSI.defaultBackground)])
+
     /// Each appearance has its own pair — the dark one is not derived from the
     /// light one, so a user can set, say, amber-on-black without that dictating
     /// their light colors. `.system` picks which pair from the host appearance
@@ -52,19 +57,41 @@ public enum NFORenderer {
   ///     `loadHTMLString` page, so linking the resource by name silently falls
   ///     back to a system font. `nil` falls back to whatever
   ///     `settings.fontFamily` is installed.
+  ///   - pathExtension: the file's extension — `.ans` is ANSI art even
+  ///     without a single escape code. See `ANSI.isANSI`.
   ///   - isDarkAppearance: the host's appearance, used only by `.system` to
   ///     decide whether to invert the user's color pair.
+  ///
+  /// ANSI art carries its own colors, so it ignores the user's pairs and
+  /// renders in the VGA palette; font and size still come from the settings.
   public static func html(
     for data: Data,
+    pathExtension: String = "",
     settings: PreviewSettings,
     font: (family: String, data: Data)? = nil,
     isDarkAppearance: Bool = true
   ) -> String {
     let (content, sauce) = SauceRecord.split(data)
-    let text = CP437.decode(content)
     let columns = sauce?.width ?? defaultColumns
 
-    let palette = Palette.resolve(settings, isDarkAppearance: isDarkAppearance)
+    let palette: Palette
+    let body: String
+    if ANSI.isANSI(content, pathExtension: pathExtension) {
+      palette = .ansi
+      body = ANSI.parse(content, columns: columns, iceColors: sauce?.usesICEColors ?? false)
+        .map { span in
+          let isDefault =
+            span.foreground == ANSI.defaultForeground && span.background == ANSI.defaultBackground
+          return isDefault
+            ? escape(span.text)
+            : "<span style=\"color:\(ANSI.vga[Int(span.foreground)]);"
+              + "background:\(ANSI.vga[Int(span.background)])\">\(escape(span.text))</span>"
+        }
+        .joined()
+    } else {
+      palette = Palette.resolve(settings, isDarkAppearance: isDarkAppearance)
+      body = escape(CP437.decode(content))
+    }
 
     // The @font-face declares the family the *file* actually is, never the
     // user's pick — otherwise choosing "Menlo" would serve a bundled file
@@ -104,7 +131,7 @@ public enum NFORenderer {
         -webkit-font-smoothing: none;
         font-variant-ligatures: none;
       }
-      </style></head><body><pre>\(escape(text))</pre></body></html>
+      </style></head><body><pre>\(body)</pre></body></html>
       """
   }
 
