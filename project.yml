@@ -50,6 +50,7 @@ targets:
       path: App/Info.plist
       properties:
         CFBundleName: Diznfo
+        CFBundleIconFile: AppIcon
         LSMinimumSystemVersion: "14.0"
         LSApplicationCategoryType: public.app-category.utilities
         NSHumanReadableCopyright: ""
