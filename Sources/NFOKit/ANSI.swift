@@ -64,33 +64,43 @@ public enum ANSI {
     func put(_ byte: UInt8) {
       while screen.count <= row { screen.append([]) }
       while screen[row].count <= column { screen[row].append(Cell()) }
-      var fg = foreground + (bold ? 8 : 0)
-      var bg = background + (blink && iceColors ? 8 : 0)
-      if inverse { swap(&fg, &bg) }
-      screen[row][column] = Cell(byte: byte, foreground: fg, background: bg)
-      // DOS wraps as soon as the last column is written, which is why art
-      // with full-width lines follows each one with a cursor-up.
+      let fg = foreground + (bold ? 8 : 0)
+      let bg = background + (blink && iceColors ? 8 : 0)
+      // libansilove's inversion rather than a plain swap: the background
+      // loses its brightness, the foreground keeps its own. `|` where it has
+      // `+`, which would run off the palette for bold on an iCE background.
+      screen[row][column] =
+        inverse
+        ? Cell(byte: byte, foreground: bg | (fg & 8), background: fg % 8)
+        : Cell(byte: byte, foreground: fg, background: bg)
       column += 1
-      if column == columns {
-        row += 1
-        column = 0
-      }
     }
 
     var index = 0
     scan: while index < bytes.count {
+      // Wraps before reading the next byte, whatever it is, so the CR/LF
+      // after a full-width line lands one row further down — which is why
+      // such art follows it with a cursor-up. A cursor moved to the edge
+      // wraps the same way.
+      if column == columns {
+        row += 1
+        column = 0
+      }
       let byte = bytes[index]
       index += 1
       switch byte {
       case 0x1A:
         break scan
       case 0x0D:
+        // libansilove ignores CR; ANSI.SYS returned to column 0. Only a lone
+        // CR tells the two apart, and there DOS is what the artist saw.
         column = 0
       case 0x0A:
         row += 1
         column = 0
       case 0x09:
-        column = min((column / 8 + 1) * 8, columns - 1)
+        // Tab stops every 8 columns, as ANSI.SYS had; libansilove just adds 8.
+        column = min((column / 8 + 1) * 8, columns)
       case 0x1B where index < bytes.count && bytes[index] == 0x5B:
         // CSI: parameter bytes up to a final byte in 0x40–0x7E.
         var end = index + 1
@@ -109,7 +119,7 @@ public enum ANSI {
         switch bytes[end] {
         case UInt8(ascii: "A"): row = max(0, row - count())
         case UInt8(ascii: "B"): row += count()
-        case UInt8(ascii: "C"): column = min(columns - 1, column + count())
+        case UInt8(ascii: "C"): column = min(columns, column + count())
         case UInt8(ascii: "D"): column = max(0, column - count())
         case UInt8(ascii: "H"), UInt8(ascii: "f"):
           row = count(0) - 1

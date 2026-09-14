@@ -297,6 +297,16 @@ struct ANSITests {
   func wrapAndCursorUp() {
     let full = String(repeating: "a", count: 4)
     #expect(Self.text(Self.parse("\(full)\r\n^[A^[2Cb", columns: 4)) == "aaaa\n  b")
+    // The default width, with no SAUCE.
+    let line = String(repeating: "a", count: 80)
+    #expect(Self.text(Self.parse("\(line)b")) == "\(line)\nb")
+  }
+
+  @Test("cursor-forward stops at the edge and wraps on the next byte, like libansilove")
+  func forwardToEdge() {
+    #expect(Self.text(Self.parse("ab^[9Cx", columns: 4)) == "ab\nx")
+    // Back from the edge is still on the same row.
+    #expect(Self.text(Self.parse("ab^[9C^[Dx", columns: 4)) == "ab\nx")
   }
 
   @Test("positions, saves and restores the cursor, and clears the screen")
@@ -320,6 +330,16 @@ struct ANSITests {
         .init(text: "y", foreground: 2, background: 0),
       ])
     #expect(Self.parse("^[1;33mx^[mz").last == .init(text: "z", foreground: 7, background: 0))
+  }
+
+  @Test("inverse drops the background's brightness and keeps the foreground's")
+  func brightInverse() {
+    // Bold red on blue → bright blue on red.
+    #expect(Self.parse("^[1;31;44;7mx")[0] == .init(text: "x", foreground: 12, background: 1))
+    // iCE-bright blue under bold red stays on the palette.
+    #expect(
+      Self.parse("^[1;5;31;44;7mx", ice: true)[0] == .init(text: "x", foreground: 12, background: 1)
+    )
   }
 
   @Test("skips sequences it does not know, and decodes glyphs as CP437")
