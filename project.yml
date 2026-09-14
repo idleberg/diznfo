@@ -118,6 +118,6 @@ targets:
           NSExtensionPointIdentifier: com.apple.quicklook.preview
           NSExtensionPrincipalClass: PreviewViewController
           NSExtensionAttributes:
-            QLSupportedContentTypes: 
+            QLSupportedContentTypes:
               [com.idleberg.Diznfo.nfo, com.idleberg.Diznfo.diz, com.idleberg.Diznfo.ans]
             QLSupportsSearchableItems: false

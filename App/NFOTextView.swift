@@ -81,10 +81,10 @@ struct NFOTextView: NSViewRepresentable {
       let art = NSMutableAttributedString()
       for span in spans {
         var attributes = textView.typingAttributes
-        attributes[.foregroundColor] = NSColor(hex: ANSI.vga[Int(span.foreground)])
+        attributes[.foregroundColor] = NSColor(hex: ANSI.color(span.foreground))
         // The view's own background already is the default one.
         if span.background != ANSI.defaultBackground {
-          attributes[.backgroundColor] = NSColor(hex: ANSI.vga[Int(span.background)])
+          attributes[.backgroundColor] = NSColor(hex: ANSI.color(span.background))
         }
         art.append(NSAttributedString(string: span.text, attributes: attributes))
       }
@@ -111,11 +111,11 @@ struct NFOTextView: NSViewRepresentable {
     // `padding: 1em` in the preview.
     textView.textContainerInset = NSSize(width: font.pointSize, height: font.pointSize)
 
-    let isEditable = isEditable && ansiSpans == nil
-    textView.isEditable = isEditable
+    let canEdit = isEditable && ansiSpans == nil
+    textView.isEditable = canEdit
     // The guide only means something while typing, and it would otherwise read
     // as part of the artwork.
-    textView.guideColumns = isEditable ? columns : nil
+    textView.guideColumns = canEdit ? columns : nil
     textView.needsDisplay = true
   }
 

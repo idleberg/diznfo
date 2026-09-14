@@ -359,26 +359,28 @@ struct ANSITests {
 
 @Suite("Round trip")
 struct RoundTripTests {
-  /// What `NFODocument` does on open and save. A file the user opened and
-  /// saved without touching must come back byte for byte — SAUCE record, EOF
-  /// marker and all.
+  /// A file the user opened and saved without touching must come back byte
+  /// for byte — SAUCE record, EOF marker and all.
   @Test(
-    "decoding and re-encoding a file reproduces it exactly",
+    "opening and saving a file reproduces it exactly",
     arguments: [
       // DOS line endings, high glyphs, SAUCE record with a COMNT block
       Data([0xDA, 0xC4, 0xBF, 0x0D, 0x0A, 0xB3, 0xDB, 0xB3, 0x0D, 0x0A, 0xFE, 0xE1])
         + SauceTests.file(art: "", comments: ["hi"]),
-      // Unix line endings, no trailer
+      // Unix line endings, no SAUCE record
       Data([0xB0, 0xB1, 0xB2, 0x0A, 0x41, 0x0A]),
+      // ANSI art, whose plain text drops the escape codes
+      Data("\u{1B}[1;31mred\u{1B}[0m\r\n".utf8) + SauceTests.file(art: ""),
     ])
   func fileRoundTrip(original: Data) {
-    let (content, _) = SauceRecord.split(original)
-    let trailer = original.dropFirst(content.count)
-    var text = CP437.decode(content)
-    if content.contains(0x0D) {
-      text = text.replacingOccurrences(of: "\n", with: "\r\n")
-    }
-    #expect(CP437.encode(text) + trailer == original)
+    let file = NFOFile(data: original, pathExtension: "nfo")
+    #expect(file.data(text: file.text) == original)
+  }
+
+  @Test("saving writes edited text back with the file's line endings")
+  func editedText() {
+    let file = NFOFile(data: Data("a\r\nb".utf8), pathExtension: "nfo")
+    #expect(file.data(text: "a\nc") == Data("a\r\nc".utf8))
   }
 }
 

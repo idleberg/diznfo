@@ -11,15 +11,18 @@ public enum ANSI {
   /// text, so the spans concatenated are the plain text of the art.
   public struct Span: Equatable, Sendable {
     public var text: String
-    /// Indexes into a 16-color palette — see `vga`. Resolving them to colors
+    /// Indexes into a 16-color palette — see `color`. Resolving them to colors
     /// is the output's job, so a different palette is only a different table.
     public var foreground: UInt8
     public var background: UInt8
   }
 
+  /// A palette index as a `#rrggbb` color.
+  public static func color(_ index: UInt8) -> String { vga[Int(index)] }
+
   /// The IBM VGA text-mode palette, in ANSI order (black, red, green, brown,
   /// blue, magenta, cyan, grey), then the bright eight.
-  public static let vga = [
+  private static let vga = [
     "#000000", "#aa0000", "#00aa00", "#aa5500", "#0000aa", "#aa00aa", "#00aaaa", "#aaaaaa",
     "#555555", "#ff5555", "#55ff55", "#ffff55", "#5555ff", "#ff55ff", "#55ffff", "#ffffff",
   ]

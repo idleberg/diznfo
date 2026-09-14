@@ -11,8 +11,8 @@ public enum NFORenderer {
 
     /// ANSI art's page: its own default grey on black, whatever the settings.
     public static let ansi = Palette(
-      foreground: ANSI.vga[Int(ANSI.defaultForeground)],
-      background: ANSI.vga[Int(ANSI.defaultBackground)])
+      foreground: ANSI.color(ANSI.defaultForeground),
+      background: ANSI.color(ANSI.defaultBackground))
 
     /// Each appearance has its own pair — the dark one is not derived from the
     /// light one, so a user can set, say, amber-on-black without that dictating
@@ -71,26 +71,26 @@ public enum NFORenderer {
     font: (family: String, data: Data)? = nil,
     isDarkAppearance: Bool = true
   ) -> String {
-    let (content, sauce) = SauceRecord.split(data)
-    let columns = sauce?.width ?? defaultColumns
+    let file = NFOFile(data: data, pathExtension: pathExtension)
+    let columns = file.columns
 
     let palette: Palette
     let body: String
-    if ANSI.isANSI(content, pathExtension: pathExtension) {
+    switch file.content {
+    case .ansi(let spans):
       palette = .ansi
-      body = ANSI.parse(content, columns: columns, iceColors: sauce?.usesICEColors ?? false)
-        .map { span in
-          let isDefault =
-            span.foreground == ANSI.defaultForeground && span.background == ANSI.defaultBackground
-          return isDefault
-            ? escape(span.text)
-            : "<span style=\"color:\(ANSI.vga[Int(span.foreground)]);"
-              + "background:\(ANSI.vga[Int(span.background)])\">\(escape(span.text))</span>"
-        }
-        .joined()
-    } else {
+      body = spans.map { span in
+        let isDefault =
+          span.foreground == ANSI.defaultForeground && span.background == ANSI.defaultBackground
+        return isDefault
+          ? escape(span.text)
+          : "<span style=\"color:\(ANSI.color(span.foreground));"
+            + "background:\(ANSI.color(span.background))\">\(escape(span.text))</span>"
+      }
+      .joined()
+    case .text(let text):
       palette = Palette.resolve(settings, isDarkAppearance: isDarkAppearance)
-      body = escape(CP437.decode(content))
+      body = escape(text)
     }
 
     // The @font-face declares the family the *file* actually is, never the
