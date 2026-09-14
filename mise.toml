@@ -36,7 +36,12 @@ run = "swift format lint --strict --recursive App Extension Sources Tests Packag
 [tasks.build]
 description = "Build the app and QuickLook extension into ./build"
 depends = ["generate"]
-run = "xcodebuild -project diznfo.xcodeproj -scheme Diznfo -configuration Debug CONFIGURATION_BUILD_DIR=$PWD/build build"
+# xcodebuild updates the bundle's contents but not its own mtime, which is what
+# Finder keys its icon cache on — without the touch it keeps showing the old one.
+run = [
+  "xcodebuild -project diznfo.xcodeproj -scheme Diznfo -configuration Debug CONFIGURATION_BUILD_DIR=$PWD/build build",
+  "touch build/Diznfo.app",
+]
 
 [tasks.register]
 description = "Build, then register the app with QuickLook (see README)"
